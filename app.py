@@ -1,4 +1,3 @@
-# app.py
 import sys
 import os
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QMessageBox
@@ -17,7 +16,9 @@ class MainWindow(QWidget):
         self.capture_thread.frameCaptured.connect(self.update_image)
 
         self.captured_images = []
-        self.image_folder = 'image'  # 图片保存文件夹名称
+        self.processed_images = set()  # 记录已经推理过的图片路径集合
+
+        self.image_folder = 'images'  # 图片保存文件夹名称
 
         # 确保图片保存文件夹存在，不存在则创建
         if not os.path.exists(self.image_folder):
@@ -74,15 +75,19 @@ class MainWindow(QWidget):
                 QMessageBox.warning(self, '警告', '未捕获到图像！')
 
     def run_inference(self):
-        if self.captured_images:
+        new_images = [image_path for image_path in self.captured_images if image_path not in self.processed_images]
+
+        if new_images:
             results = []
-            for image_path in self.captured_images:
+            for image_path in new_images:
                 result = self.inference_engine.infer(image_path)
                 results.extend(result)
+                self.processed_images.add(image_path)  # 记录已经推理过的图片路径
+
             self.inference_engine.save_results(results)
             print("推理完成，结果已保存")
         else:
-            QMessageBox.warning(self, '警告', '请先捕获图像！')
+            QMessageBox.warning(self, '警告', '没有新的图片需要推理！')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
